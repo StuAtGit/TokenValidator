@@ -25,6 +25,11 @@ import java.util.concurrent.TimeUnit;
  *   the token will be cached. There is a global expiration for the token cache,
  *   but tokens which are expired will be evicted as well.
  *
+ *   TODO: Perhaps make this work with multiple resources, for particular access token domains/types
+ *   TODO: (e.g. OAuth or internal auth. Or multiple Oauth providers.
+ *   TODO: Another option is to have clients keep multiple TokenValidators around
+ *   TODO: Or have a composite class that tracks all of them for the shareplaylearn API.
+ *
  */
 public class TokenValidator
 {
