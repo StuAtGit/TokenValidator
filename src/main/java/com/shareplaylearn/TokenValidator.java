@@ -8,6 +8,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -56,6 +57,23 @@ public class TokenValidator
                 .maximumSize(cacheSize).build();
         httpClient = HttpClients.
                 createDefault();
+        gson = new Gson();
+        log = LoggerFactory.getLogger(TokenValidator.class);
+        disableJsonParse = false;
+    }
+
+    public TokenValidator(String validationResource,
+                          int cacheSize,
+                          long maxCacheTime,
+                          CloseableHttpClient httpClient ) {
+        if( !validationResource.endsWith("/") ) {
+            validationResource += "/";
+        }
+        this.validationResource = validationResource;
+        tokenCache = CacheBuilder.newBuilder()
+                .expireAfterAccess(maxCacheTime, TimeUnit.SECONDS)
+                .maximumSize(cacheSize).build();
+        this.httpClient = httpClient;
         gson = new Gson();
         log = LoggerFactory.getLogger(TokenValidator.class);
         disableJsonParse = false;
