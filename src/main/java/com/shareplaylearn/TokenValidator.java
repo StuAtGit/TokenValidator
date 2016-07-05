@@ -53,9 +53,6 @@ public class TokenValidator
     public TokenValidator( String validationResource,
                            int cacheSize,
                            long maxCacheTime) {
-        if( !validationResource.endsWith("/") ) {
-            validationResource += "/";
-        }
         this.validationResource = validationResource;
         tokenCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(maxCacheTime, TimeUnit.SECONDS)
@@ -71,9 +68,6 @@ public class TokenValidator
                           int cacheSize,
                           long maxCacheTime,
                           CloseableHttpClient httpClient ) {
-        if( !validationResource.endsWith("/") ) {
-            validationResource += "/";
-        }
         this.validationResource = validationResource;
         tokenCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(maxCacheTime, TimeUnit.SECONDS)
@@ -95,10 +89,13 @@ public class TokenValidator
             }
         }
 
-        HttpGet get = new HttpGet( this.validationResource + token );
+        HttpGet get = new HttpGet( this.validationResource );
+        get.addHeader("Authorization", "Bearer " + token);
         try( CloseableHttpResponse response =
                      (CloseableHttpResponse) this.httpClient.execute(get)) {
             if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                log.info("Authorization for token: " + token + " failed: " + response.getStatusLine().getStatusCode());
+                log.info(response.getStatusLine().getReasonPhrase());
                 return false;
             }
             if( !disableJsonParse && response.getEntity() != null ) {
