@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.shareplaylearn.exceptions.Exceptions;
+import com.shareplaylearn.models.TokenInfo;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -33,14 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TokenValidator
 {
-    /**
-     * small class with possible fields holding timeouts
-     * GSON should fill them out if they exist, null otherwise.
-     */
-    private static class TokenInfo {
-        Long expires_in;
-        Long expiration;
-    }
+
 
     private final String validationResource;
     private final Cache<String,TokenInfo> tokenCache;

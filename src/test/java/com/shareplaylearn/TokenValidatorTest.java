@@ -22,7 +22,8 @@ public class TokenValidatorTest
         /**
          * TODO:
          * Working - but auth service actually cares whether there is a trailing slash,
-         * and should be modified to return JSON with expires_in
+         * and should be modified to return JSON with expires_in (and test cache)
+         * Then mock file service & then e2e & deploy.
          */
         TokenValidator tokenValidator = new TokenValidator(
                 "https://www.shareplaylearn.com/auth_api/oauthToken_validation",
