@@ -1,5 +1,8 @@
 package com.shareplaylearn;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 /**
@@ -19,16 +22,14 @@ public class TokenValidatorTest
      * @param args
      */
     public static void main( String[] args ) throws IOException {
-        /**
-         * TODO:
-         * Working - but auth service actually cares whether there is a trailing slash,
-         * and should be modified to return JSON with expires_in (and test cache)
-         * Then mock file service & then e2e & deploy.
-         */
+        Logger log = LoggerFactory.getLogger(TokenValidatorTest.class);
+        log.info("Starting up e2e test...");
         TokenValidator tokenValidator = new TokenValidator(
                 "https://www.shareplaylearn.com/auth_api/oauthToken_validation",
                 5, 30 );
-        String token = "ya29.CjMWA9JJGoU4vHj9OMQHvO7CLShFoODXxYrI3RcTHhWIIIhC-aA8bH0dLW5GLgkWGMMkGyg";
+
+        String token = "";
+        System.out.println(tokenValidator.isValid(token));
         System.out.println(tokenValidator.isValid(token));
     }
 }

@@ -2,6 +2,7 @@ package com.shareplaylearn;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.primitives.Booleans;
 import com.google.gson.Gson;
 import com.shareplaylearn.exceptions.Exceptions;
 import com.shareplaylearn.models.TokenInfo;
@@ -19,12 +20,11 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This library validates tokens by two means:
- *   - for cached tokens, it checks if they're expired
- *   - for brand new tokens, it queries the given resource, and checks for OK, if the token is OK, and
- *   the entity response contains a JSON entity with a expiry field named in TokenInfo,
- *   the token will be cached. There is a global expiration for the token cache,
- *   but tokens which are expired will be evicted as well.
+ *  Checks tokens and caches them once a valid response is received.
+ *  Initially, attempted to extract expiration from the token validation response,
+ *  but it's not present in the response from google's validation.
+ *  Since who ever is asking for this can decide whatever they want about the token,
+ *  it shouldn't hurt to let them ask for it to be cached.
  *
  *   TODO: Perhaps make this work with multiple resources, for particular access token domains/types
  *   TODO: (e.g. OAuth or internal auth. Or multiple Oauth providers.
@@ -34,52 +34,63 @@ import java.util.concurrent.TimeUnit;
  */
 public class TokenValidator
 {
-
-
-    private final String validationResource;
-    private final Cache<String,TokenInfo> tokenCache;
-    private final HttpClient httpClient;
-    private final Gson gson;
-    private final Logger log;
-    //if the configured resource doesn't send back JSON, don't keep trying.
-    private boolean disableJsonParse;
+    private String validationResource;
+    private Cache<String,TokenInfo> tokenCache;
+    private HttpClient httpClient;
+    private Gson gson;
+    private Logger log;
+    private long cacheTime;
 
     public TokenValidator( String validationResource,
                            int cacheSize,
-                           long maxCacheTime) {
-        this.validationResource = validationResource;
-        tokenCache = CacheBuilder.newBuilder()
-                .expireAfterAccess(maxCacheTime, TimeUnit.SECONDS)
-                .maximumSize(cacheSize).build();
-        httpClient = HttpClients.
-                createDefault();
-        gson = new Gson();
-        log = LoggerFactory.getLogger(TokenValidator.class);
-        disableJsonParse = false;
+                           long cacheTime) {
+        initialize(validationResource, cacheSize, cacheTime, HttpClients.createDefault());
     }
 
     public TokenValidator(String validationResource,
                           int cacheSize,
-                          long maxCacheTime,
+                          long cacheTime,
                           CloseableHttpClient httpClient ) {
+        initialize(validationResource, cacheSize, cacheTime, httpClient);
+    }
+
+    private void initialize(String validationResource,
+                            int cacheSize,
+                            long cacheTime,
+                            CloseableHttpClient httpClient) {
         this.validationResource = validationResource;
         tokenCache = CacheBuilder.newBuilder()
-                .expireAfterAccess(maxCacheTime, TimeUnit.SECONDS)
+                .expireAfterWrite(cacheTime, TimeUnit.SECONDS)
                 .maximumSize(cacheSize).build();
         this.httpClient = httpClient;
         gson = new Gson();
+        this.cacheTime = cacheTime;
         log = LoggerFactory.getLogger(TokenValidator.class);
-        disableJsonParse = false;
+        log.debug("token validator created.");
     }
 
-    @SuppressWarnings("unused")
-    public boolean isValid(String token ) throws IOException {
+    @SuppressWarnings({"unused", "WeakerAccess"})
+    public boolean isValid(String token) throws IOException {
+        return isValid(token, this.cacheTime);
+    }
+
+    /**
+     * If you want a specific token to have an expiration shorter than the cache
+     * expiration, you can use this method.
+     * @param token
+     * @param expiration
+     * @return
+     * @throws IOException
+     */
+    @SuppressWarnings({"unused", "WeakerAccess"})
+    public boolean isValid(String token, Long expiration) throws IOException {
         TokenInfo tokenInfo;
-        if( ( tokenInfo = this.tokenCache.getIfPresent(token)) != null ) {
-            if( tokenInfo.expiration > System.currentTimeMillis() * 1000 ) {
-                this.tokenCache.invalidate(token);
-            } else {
+        if( (tokenInfo = this.tokenCache.getIfPresent(token)) != null ) {
+            if( tokenInfo.expiration < System.currentTimeMillis() * 1000 ) {
+                log.debug("Retrieved token validation from cache.");
                 return true;
+            } else {
+                this.tokenCache.invalidate(token);
             }
         }
 
@@ -92,37 +103,9 @@ public class TokenValidator
                 log.info(response.getStatusLine().getReasonPhrase());
                 return false;
             }
-            if( !disableJsonParse && response.getEntity() != null ) {
-                String entity = EntityUtils.toString(response.getEntity());
-                try {
-                    tokenInfo = gson.fromJson(entity, TokenInfo.class);
-                    if( tokenInfo.expires_in != null ) {
-                        //expire it a little early to play it safe on any lag.
-                        //not perfect - but it never can be, really.
-                        tokenInfo.expiration = (System.currentTimeMillis() * 1000 + tokenInfo.expires_in) - 5;
-                    }
-                    if( tokenInfo.expiration != null ) {
-                        this.tokenCache.put(token, tokenInfo);
-                    }
-                    //GSON tends to throw runtime exceptions, some are just throwable (annoying)
-                    //so this is really the best way to deal with non-JSON resources.
-                } catch ( Throwable t ) {
-                    log.info("Token validation resource: " + this.validationResource + " did not return" +
-                            " a valid JSON entity: " + Exceptions.asString(t) + " disabling JSON parsing (this will disable caching as well)." );
-                    disableJsonParse = true;
-                }
-            }
+            this.tokenCache.put(token, new TokenInfo(token, expiration));
             return true;
         }
-    }
-
-    public boolean isDisableJsonParse() {
-        return disableJsonParse;
-    }
-
-    public TokenValidator setDisableJsonParse(boolean disableJsonParse) {
-        this.disableJsonParse = disableJsonParse;
-        return this;
     }
 
     public static void main(String[] args )
