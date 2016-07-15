@@ -2,9 +2,7 @@ package com.shareplaylearn;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.primitives.Booleans;
 import com.google.gson.Gson;
-import com.shareplaylearn.exceptions.Exceptions;
 import com.shareplaylearn.models.TokenInfo;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -12,7 +10,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +34,6 @@ public class TokenValidator
     private String validationResource;
     private Cache<String,TokenInfo> tokenCache;
     private HttpClient httpClient;
-    private Gson gson;
     private Logger log;
     private long cacheTime;
 
@@ -63,7 +59,6 @@ public class TokenValidator
                 .expireAfterWrite(cacheTime, TimeUnit.SECONDS)
                 .maximumSize(cacheSize).build();
         this.httpClient = httpClient;
-        gson = new Gson();
         this.cacheTime = cacheTime;
         log = LoggerFactory.getLogger(TokenValidator.class);
         log.debug("token validator created.");
