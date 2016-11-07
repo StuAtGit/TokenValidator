@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
+
 /**
  * Unit test for simple App.
  */
@@ -28,8 +31,22 @@ public class TokenValidatorTest
                 "https://www.shareplaylearn.com/auth_api/oauthToken_validation",
                 5, 30 );
 
-        String token = "";
-        System.out.println(tokenValidator.isValid(token));
-        System.out.println(tokenValidator.isValid(token));
+        /**
+         * Plug in a valid user token & user id for gmail
+         * (you can use the developer console to log into the site, and look at the request headers
+         * & url).
+         * Don't check values in...!
+         */
+        String token = "ya29.CjGPA4A-FmHhNSqEcaHi-gFME4zwRk-TQKf5dDuobmBFvVVO6utjvIskofZeHfi1J4Yn";
+        String gmailId = "114145198865195405983";
+
+        assertTrue(tokenValidator.isValid(token, gmailId));
+        //this should be from valid cache
+        assertTrue(tokenValidator.isValid(token, gmailId));
+        //this will also be from valid token cache, but will not be valid (wrong user)
+        assertFalse(tokenValidator.isValid(token, "ABC"));
+        assertFalse(tokenValidator.isValid("ABC", gmailId));
+        //this will be from teh invalid cache.
+        assertFalse(tokenValidator.isValid("ABC", gmailId));
     }
 }
