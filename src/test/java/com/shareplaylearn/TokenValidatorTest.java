@@ -35,10 +35,10 @@ public class TokenValidatorTest
          * Plug in a valid user token & user id for gmail
          * (you can use the developer console to log into the site, and look at the request headers
          * & url).
-         * Don't check values in...!
+         * Don't check values in...! (not the end of the world, if I do)
          */
-        String token = "ya29.CjGPA4A-FmHhNSqEcaHi-gFME4zwRk-TQKf5dDuobmBFvVVO6utjvIskofZeHfi1J4Yn";
-        String gmailId = "114145198865195405983";
+        String token = "";
+        String gmailId = "";
 
         assertTrue(tokenValidator.isValid(token, gmailId));
         //this should be from valid cache
